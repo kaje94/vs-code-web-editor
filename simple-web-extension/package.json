@@ -1,0 +1,87 @@
+{
+  "name": "simple-web-extension",
+  "displayName": "simple-web-extension",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:ballerina",
+    "onCommand:simple-web-extension.hello",
+    "workspaceContains:**/Ballerina.toml"
+  ],
+  "browser": "./dist/web/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "simple-web-extension.hello",
+        "title": "Hello World"
+      }
+    ],
+    "languages": [
+      {
+				"id": "ballerina",
+				"aliases": [
+					"Ballerina",
+					"ballerina"
+				],
+				"extensions": [
+					".bal"
+				],
+				"configuration": "./ballerina.configuration.json",
+				"icon": {
+					"light": "./resources/images/icons/ballerina.svg",
+					"dark": "./resources/images/icons/ballerina-inverse.svg"
+				}
+			},
+      {
+				"id": "toml",
+				"aliases": [
+					"Toml",
+					"toml"
+				],
+				"extensions": [
+					".toml"
+				]
+			}
+    ],
+    "grammars": [
+			{
+				"language": "ballerina",
+				"scopeName": "source.ballerina",
+				"path": "./grammar/ballerina-grammar/syntaxes/ballerina.tmLanguage"
+			}
+		]
+  },
+  "scripts": {
+    "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=.",
+    "pretest": "npm run compile-web",
+    "vscode:prepublish": "npm run package-web",
+    "compile-web": "webpack",
+    "watch-web": "webpack --watch",
+    "package-web": "webpack --mode production --devtool hidden-source-map",
+    "lint": "eslint src",
+    "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. ."
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.96.0",
+    "@types/mocha": "^10.0.10",
+    "@types/assert": "^1.5.11",
+    "eslint": "^9.16.0",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "mocha": "^11.0.1",
+    "typescript": "^5.7.2",
+    "@vscode/test-web": "^0.0.65",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4",
+    "@types/webpack-env": "^1.18.5",
+    "assert": "^2.1.0",
+    "process": "^0.11.10"
+  }
+}
