@@ -22,3 +22,8 @@ sample message:
     }
 }
 ```
+
+Sample referred from
+
+- https://github.com/TypeFox/monaco-languageclient#examples-overview
+- https://github.com/TypeFox/monaco-languageclient/blob/main/packages/examples/src/python/server/main.ts
