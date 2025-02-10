@@ -1,0 +1,27 @@
+{
+	"name": "ballerina-lang-client",
+	"description": "Ballerina Language Client",
+	"author": "Microsoft Corporation",
+	"license": "MIT",
+	"version": "0.0.1",
+	"publisher": "vscode",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Microsoft/vscode-extension-samples"
+	},
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"dependencies": {
+		"vscode-jsonrpc": "^8.2.1",
+		"vscode-languageclient": "^9.0.1",
+		"vscode-languageserver-protocol": "^3.17.5",
+		"vscode-ws-jsonrpc": "^3.4.0",
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/vscode": "^1.85.0",
+		"@types/ws": "^8.5.14",
+		"@vscode/test-web": "^0.0.51"
+	}
+}

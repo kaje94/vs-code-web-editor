@@ -14,7 +14,7 @@
     "onCommand:simple-web-extension.hello",
     "workspaceContains:**/Ballerina.toml"
   ],
-  "browser": "./dist/web/extension.js",
+  "browser": "./client/dist/browserClientMain.js",
   "contributes": {
     "commands": [
       {
@@ -54,6 +54,26 @@
 				"language": "ballerina",
 				"scopeName": "source.ballerina",
 				"path": "./grammar/ballerina-grammar/syntaxes/ballerina.tmLanguage"
+			}
+		],
+    "configuration": [
+			{
+				"order": 22,
+				"id": "ballerina",
+				"title": "ballerina",
+				"properties": {
+					"ballerina.trace.server": {
+						"type": "string",
+						"scope": "window",
+						"enum": [
+							"off",
+							"messages",
+							"verbose"
+						],
+						"default": "verbose",
+						"description": "Traces the communication between VS Code and the lsp-web-extension-sample language server."
+					}
+				}
 			}
 		]
   },
