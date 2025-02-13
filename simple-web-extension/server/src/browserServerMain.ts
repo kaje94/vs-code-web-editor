@@ -71,6 +71,7 @@ documents.listen(connection);
 
 connection.listen();
 
+// todo: Need to refactor and organize the code further.
 connection.onDidOpenTextDocument((params) => {
     const uriParts = params.textDocument.uri.split("///");
     const newUri = "file://" + sampleFileRootPath + uriParts[1];
