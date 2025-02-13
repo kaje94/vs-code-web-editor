@@ -1,4 +1,4 @@
-import { ExtensionContext, Uri, commands, window } from 'vscode';
+import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
 import { LanguageClientOptions, MessageTransports } from 'vscode-languageclient';
 
 import { LanguageClient, ServerOptions } from 'vscode-languageclient/node';
@@ -12,14 +12,21 @@ export async function activate(context: ExtensionContext) {
 		window.showInformationMessage('Hello from simple-web-extension!');
 	}));
 
-	// const ws = new WebSocket(`ws://localhost:30001/bal`);
+	// const ws = new WebSocket(`ws://localhost:9090/bal`);
     // const iWebSocket = toSocket(ws);
     // const reader = new WebSocketMessageReader(iWebSocket);
     // const writer = new WebSocketMessageWriter(iWebSocket);
 
-    // client = createLanguageClient(reader, writer);
-    // await client.start();
-    // context.subscriptions.push(client);
+    // if (ws.readyState === WebSocket.OPEN) {
+    //     client = createLanguageClient(reader, writer);
+    //     await client.start();
+    //     context.subscriptions.push(client);
+    // }
+    // ws.onopen = async () => {
+    //     client = createLanguageClient(reader, writer);
+    //     await client.start();
+    //     context.subscriptions.push(client);
+    // }
 
 	client = createWorkerLanguageClient(context);
 	client.start().then(() => {
@@ -38,16 +45,25 @@ function createWorkerLanguageClient(context: ExtensionContext): WorkerLanguageCl
 }
 
 function createLanguageClient(reader: WebSocketMessageReader, writer: WebSocketMessageWriter) : LanguageClient {
-    const serverOptions: ServerOptions = () => Promise.resolve({
+    const messageTransports: MessageTransports = {
         reader: reader,
         writer: writer
-    })
+    }
+    const serverOptions: ServerOptions = () => Promise.resolve(messageTransports)
     return new LanguageClient('ballerinalangClient', 'Ballerina Language Client', serverOptions, getClientOptions())
 }
 
 function getClientOptions(): LanguageClientOptions {
 	return {
 		documentSelector: [{ scheme: 'file', language: "ballerina" }],
+        synchronize: { configurationSection: "ballerina" },
+        initializationOptions: {
+            "enableSemanticHighlighting": <string>workspace.getConfiguration().get("kolab.enableSemanticHighlighting"),
+			"enableInlayHints": <string>workspace.getConfiguration().get("kolab.enableInlayHints"),
+			"supportBalaScheme": "true",
+			"supportQuickPick": "true",
+			"supportPositionalRenamePopup": "true"
+        }
 	};
 }
 
