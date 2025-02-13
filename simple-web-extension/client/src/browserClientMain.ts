@@ -9,24 +9,9 @@ let client: LanguageClient | WorkerLanguageClient | undefined;
 
 export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('simple-web-extension.hello', () => {
+        console.log(workspace.workspaceFolders);
 		window.showInformationMessage('Hello from simple-web-extension!');
 	}));
-
-	// const ws = new WebSocket(`ws://localhost:9090/bal`);
-    // const iWebSocket = toSocket(ws);
-    // const reader = new WebSocketMessageReader(iWebSocket);
-    // const writer = new WebSocketMessageWriter(iWebSocket);
-
-    // if (ws.readyState === WebSocket.OPEN) {
-    //     client = createLanguageClient(reader, writer);
-    //     await client.start();
-    //     context.subscriptions.push(client);
-    // }
-    // ws.onopen = async () => {
-    //     client = createLanguageClient(reader, writer);
-    //     await client.start();
-    //     context.subscriptions.push(client);
-    // }
 
 	client = createWorkerLanguageClient(context);
 	client.start().then(() => {
@@ -44,18 +29,12 @@ function createWorkerLanguageClient(context: ExtensionContext): WorkerLanguageCl
 	return new WorkerLanguageClient('ballerinalangClient', 'Ballerina Language Client', getClientOptions(), worker);
 }
 
-function createLanguageClient(reader: WebSocketMessageReader, writer: WebSocketMessageWriter) : LanguageClient {
-    const messageTransports: MessageTransports = {
-        reader: reader,
-        writer: writer
-    }
-    const serverOptions: ServerOptions = () => Promise.resolve(messageTransports)
-    return new LanguageClient('ballerinalangClient', 'Ballerina Language Client', serverOptions, getClientOptions())
-}
-
 function getClientOptions(): LanguageClientOptions {
 	return {
-		documentSelector: [{ scheme: 'file', language: "ballerina" }],
+		documentSelector: [
+            { scheme: 'file', language: "ballerina" },
+            { scheme: 'file', language: "toml"}
+        ],
         synchronize: { configurationSection: "ballerina" },
         initializationOptions: {
             "enableSemanticHighlighting": <string>workspace.getConfiguration().get("kolab.enableSemanticHighlighting"),
@@ -63,7 +42,9 @@ function getClientOptions(): LanguageClientOptions {
 			"supportBalaScheme": "true",
 			"supportQuickPick": "true",
 			"supportPositionalRenamePopup": "true"
-        }
+        },
+        outputChannel: window.createOutputChannel('Ballerina'),
+        traceOutputChannel: window.createOutputChannel('Trace')
 	};
 }
 
