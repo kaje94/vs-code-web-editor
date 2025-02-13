@@ -26,6 +26,7 @@ connection.onInitialize((_params: InitializeParams): Promise<InitializeResult> =
     const workspaceFolders = _params.workspaceFolders;
     let firstFolder = ""
     if (workspaceFolders) {
+        // Dealing with one folder for testing. todo: Need to change into the loop later
         firstFolder = sampleFileRootPath + workspaceFolders[0].name;
         workspaceFolders[0].name = firstFolder;
         workspaceFolders[0].uri = "file://" + firstFolder;
