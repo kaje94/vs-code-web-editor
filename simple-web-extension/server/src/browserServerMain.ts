@@ -19,18 +19,32 @@ const browserWriter = new BrowserMessageWriter(self);
 const connection = createConnection(browserReader, browserWriter);
 
 // TODO: Need to figure out how to detect this actual path programatically
-const sampleFileRootPath = "/home/dharshi/Documents/ballerina/";
+const sampleFileRootPath = "file:///home/dharshi/Documents/ballerina/";
+interface WorkSpaceFolderPathMap {
+    relativeFolderName: string;
+    absoluteFolderName: string;
+}
+
+// file:///folder/main.bal
+// file:///home/dharshi/Documents/ballerina/folder/main.bal
+
+const workspaceFoldersMap: WorkSpaceFolderPathMap[] = [];
 
 connection.onInitialize((_params: InitializeParams): Promise<InitializeResult> => {
     console.log(_params);
     const workspaceFolders = _params.workspaceFolders;
-    let firstFolder = ""
     if (workspaceFolders) {
-        // Dealing with one folder for testing. TODO: Need to change into the loop later
-        firstFolder = sampleFileRootPath + workspaceFolders[0].name;
-        workspaceFolders[0].name = firstFolder;
-        workspaceFolders[0].uri = "file://" + firstFolder;
+        workspaceFolders.forEach((folder, index) => {
+            const relativeFolderName = folder.name
+            const absoluteFolderName = `${sampleFileRootPath}${relativeFolderName}`
+            folder.uri = absoluteFolderName;
+            workspaceFoldersMap.push({
+                relativeFolderName: `/${relativeFolderName}`,
+                absoluteFolderName: absoluteFolderName
+            })
+        });
         _params.workspaceFolders = workspaceFolders;
+        console.log("after changing folder", _params)
     }
     const request = getRpcRequest(1, "initialize", _params)
     return sendRequestToWS(request) as Promise<InitializeResult>;
@@ -59,13 +73,11 @@ connection.onDidChangeTextDocument((params) => {
     sendNotificationToWS("textDocument/didChange", resolveAbsolutePath(params));
 })
 
+
 connection.onRequest((method, params) => {
-    if (params && "textDocument" in params && "uri" in (params.textDocument as any)) {
-        params = resolveAbsolutePath(params);
-    }
     // TODO: find a proper id generating way
     const requestId = Math.floor(Math.random() * 100000);
-    const request = getRpcRequest(requestId, method, params);
+    const request = getRpcRequest(requestId, method, resolveAbsolutePath(params));
     return sendRequestToWS(request);
 });
 
@@ -151,17 +163,14 @@ function getRpcRequest(id: number, method: string, params: object | any[] | unde
 }
 
 function resolveAbsolutePath(params: object | any | undefined) {
-    if (params) {
-        const uriParts = (params.textDocument as { uri: string }).uri.split("///");
-        const newUri = "file://" + sampleFileRootPath + uriParts[1];
-        (params.textDocument as { uri: string }).uri = newUri;
-    }
-    return params;
+    let paramsStr = JSON.stringify(params);
+    paramsStr = paramsStr.replace(new RegExp("file:///", 'g'), sampleFileRootPath);;
+    return JSON.parse(paramsStr);
 }
 
 function resolveRelativePath(data: any): any {
     let responseStr = data as string;
-    responseStr = responseStr.replace(new RegExp(sampleFileRootPath, 'g'), "/");;
+    responseStr = responseStr.replace(new RegExp(sampleFileRootPath, 'g'), "file:///");;
     return JSON.parse(responseStr);
 }
 

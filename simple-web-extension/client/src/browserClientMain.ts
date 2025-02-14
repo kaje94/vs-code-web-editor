@@ -1,15 +1,19 @@
-import { ExtensionContext, Uri, commands, window, workspace } from 'vscode';
-import { LanguageClientOptions, MessageTransports } from 'vscode-languageclient';
+import { 
+	ExtensionContext, 
+	Uri, 
+	commands, 
+	window, 
+	workspace 
+} from 'vscode';
+import { 
+	LanguageClientOptions, 
+	LanguageClient as WorkerLanguageClient 
+} from 'vscode-languageclient/browser';
 
-import { LanguageClient, ServerOptions } from 'vscode-languageclient/node';
-import { LanguageClient as WorkerLanguageClient } from 'vscode-languageclient/browser';
-import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
-
-let client: LanguageClient | WorkerLanguageClient | undefined;
+let client: WorkerLanguageClient | undefined;
 
 export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('simple-web-extension.hello', () => {
-        console.log(workspace.workspaceFolders);
 		window.showInformationMessage('Hello from simple-web-extension!');
 	}));
 
@@ -19,6 +23,7 @@ export async function activate(context: ExtensionContext) {
     }).catch((error) => {
         console.error('Failed to start language client:', error);
     });
+
 	context.subscriptions.push(client);
 }
 
