@@ -28,25 +28,18 @@ interface WorkSpaceFolderPathMap {
 // file:///folder/main.bal
 // file:///home/dharshi/Documents/ballerina/folder/main.bal
 
-const workspaceFoldersMap: WorkSpaceFolderPathMap[] = [];
-
-connection.onInitialize((_params: InitializeParams): Promise<InitializeResult> => {
+connection.onInitialize(async (_params: InitializeParams): Promise<InitializeResult> => {
     console.log(_params);
-    const workspaceFolders = _params.workspaceFolders;
-    if (workspaceFolders) {
-        workspaceFolders.forEach((folder, index) => {
-            const relativeFolderName = folder.name
-            const absoluteFolderName = `${sampleFileRootPath}${relativeFolderName}`
-            folder.uri = absoluteFolderName;
-            workspaceFoldersMap.push({
-                relativeFolderName: `/${relativeFolderName}`,
-                absoluteFolderName: absoluteFolderName
-            })
-        });
-        _params.workspaceFolders = workspaceFolders;
-        console.log("after changing folder", _params)
-    }
-    const request = getRpcRequest(1, "initialize", _params)
+    // const workspaceFolders = _params.workspaceFolders;
+    // if (workspaceFolders) {
+    //     workspaceFolders.forEach((folder) => {
+    //         const relativeFolderName = folder.name
+    //         const absoluteFolderName = `${sampleFileRootPath}${relativeFolderName}`
+    //         folder.uri = absoluteFolderName;
+    //     });
+    //     _params.workspaceFolders = workspaceFolders;
+    // }
+    const request = getRpcRequest(1, "initialize", await resolveAbsolutePath(_params))
     return sendRequestToWS(request) as Promise<InitializeResult>;
 });
 
@@ -60,36 +53,34 @@ documents.listen(connection);
 
 connection.listen();
 
-// TODO: Need to refactor and organize the code further.
-connection.onDidOpenTextDocument((params) => {
-    sendNotificationToWS("textDocument/didOpen", resolveAbsolutePath(params));
+connection.onDidOpenTextDocument(async (params) => {
+    sendNotificationToWS("textDocument/didOpen", await resolveAbsolutePath(params));
 })
 
-connection.onDidCloseTextDocument((params) => {
-    sendNotificationToWS("textDocument/didClose", resolveAbsolutePath(params));
+connection.onDidCloseTextDocument(async (params) => {
+    sendNotificationToWS("textDocument/didClose", await resolveAbsolutePath(params));
 })
 
-connection.onDidChangeTextDocument((params) => {
-    sendNotificationToWS("textDocument/didChange", resolveAbsolutePath(params));
+connection.onDidChangeTextDocument(async (params) => {
+    sendNotificationToWS("textDocument/didChange", await resolveAbsolutePath(params));
 })
 
-
-connection.onRequest((method, params) => {
+connection.onRequest(async (method, params) => {
     // TODO: find a proper id generating way
     const requestId = Math.floor(Math.random() * 100000);
-    const request = getRpcRequest(requestId, method, resolveAbsolutePath(params));
+    const request = getRpcRequest(requestId, method, await resolveAbsolutePath(params));
     return sendRequestToWS(request);
 });
 
-connection.onNotification((method, params) => {
+connection.onNotification(async (method, params) => {
     if (params && "textDocument" in params && "uri" in (params.textDocument as any)) {
-        return sendNotificationToWS(method, resolveAbsolutePath(params));
+        return sendNotificationToWS(method, await resolveAbsolutePath(params));
     }
     sendNotificationToWS(method, params);
 });
 
-ws.onmessage = (event) => {
-    const response = resolveRelativePath(event.data);
+ws.onmessage = async (event) => {
+    const response = await resolveRelativePath(event.data);
     if (response.method && response.id) {
         console.log('Received request from WebSocket server:', response);
         connection.sendRequest(response.method, response.params).then((result) => {
@@ -109,9 +100,9 @@ ws.onmessage = (event) => {
 function sendRequestToWS(request: any) {
     console.log(`Forwarding request to WebSocket server: ${request.method}`, request.params);
     return new Promise((resolve, reject) => {
-        const handleMessage = (event: MessageEvent) => {
+        const handleMessage = async (event: MessageEvent) => {
             try {
-                const response = resolveRelativePath(event.data);
+                const response = await resolveRelativePath(event.data);
                 if (response.id === request.id) {
                     console.log(`Received response for ${request.method}:`, response);
                     ws.removeEventListener('message', handleMessage);
@@ -162,16 +153,41 @@ function getRpcRequest(id: number, method: string, params: object | any[] | unde
     };
 }
 
-function resolveAbsolutePath(params: object | any | undefined) {
+interface WorkspaceFolderPath {
+	relativePath: string,
+	absolutePath: string
+}
+
+async function getDataFromCache(key: string): Promise<WorkspaceFolderPath[]> {
+    const cache = await caches.open("custom-cache");
+    const url = new URL(key, self.location.origin);
+    const response = await cache.match(url);
+
+    if (response) {
+        return response.json() as Promise<WorkspaceFolderPath[]>;
+    }
+    return [];
+}
+
+async function resolveAbsolutePath(params: object | any | undefined) {
     let paramsStr = JSON.stringify(params);
-    paramsStr = paramsStr.replace(new RegExp("file:///", 'g'), sampleFileRootPath);;
+    const workspaceDetails = await getDataFromCache("/workspaceFolders");
+    console.log("workspace details from cache: ", workspaceDetails);
+    workspaceDetails.forEach(folder => {
+        paramsStr = paramsStr.replace(new RegExp(folder.relativePath, 'g'), folder.absolutePath);
+    });
     return JSON.parse(paramsStr);
 }
 
-function resolveRelativePath(data: any): any {
+async function resolveRelativePath(data: any) {
     let responseStr = data as string;
-    responseStr = responseStr.replace(new RegExp(sampleFileRootPath, 'g'), "file:///");;
+    const workspaceDetails = await getDataFromCache("/workspaceFolders");
+    console.log("workspace details from cache: ", workspaceDetails);
+    workspaceDetails.forEach(folder => {
+        responseStr = responseStr.replace(new RegExp(folder.absolutePath, 'g'), folder.relativePath);
+    });
     return JSON.parse(responseStr);
 }
+
 
 
