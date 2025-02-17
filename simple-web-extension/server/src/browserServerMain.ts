@@ -174,4 +174,6 @@ function resolveRelativePath(data: any): any {
     return JSON.parse(responseStr);
 }
 
-
+function hello(params:string) {
+    console.log(params)
+}
