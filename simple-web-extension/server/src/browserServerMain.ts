@@ -171,21 +171,21 @@ async function getDataFromCache(key: string): Promise<WorkspaceFolderPath[]> {
 
 async function resolveAbsolutePath(params: object | any | undefined) {
     let paramsStr = JSON.stringify(params);
-    const workspaceDetails = await getDataFromCache("/workspaceFolders");
-    console.log("workspace details from cache: ", workspaceDetails);
-    workspaceDetails.forEach(folder => {
-        paramsStr = paramsStr.replace(new RegExp(folder.relativePath, 'g'), folder.absolutePath);
-    });
+    // const workspaceDetails = await getDataFromCache("/workspaceFolders");
+    // console.log("workspace details from cache: ", workspaceDetails);
+    // workspaceDetails.forEach(folder => {
+    //     paramsStr = paramsStr.replace(new RegExp(folder.relativePath, 'g'), folder.absolutePath);
+    // });
     return JSON.parse(paramsStr);
 }
 
 async function resolveRelativePath(data: any) {
     let responseStr = data as string;
-    const workspaceDetails = await getDataFromCache("/workspaceFolders");
-    console.log("workspace details from cache: ", workspaceDetails);
-    workspaceDetails.forEach(folder => {
-        responseStr = responseStr.replace(new RegExp(folder.absolutePath, 'g'), folder.relativePath);
-    });
+    // const workspaceDetails = await getDataFromCache("/workspaceFolders");
+    // console.log("workspace details from cache: ", workspaceDetails);
+    // workspaceDetails.forEach(folder => {
+    //     responseStr = responseStr.replace(new RegExp(folder.absolutePath, 'g'), folder.relativePath);
+    // });
     return JSON.parse(responseStr);
 }
 

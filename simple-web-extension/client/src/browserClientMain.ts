@@ -1,5 +1,4 @@
 import { 
-	ConfigurationChangeEvent,
 	ExtensionContext, 
 	RelativePattern, 
 	Uri, 
@@ -19,7 +18,7 @@ export async function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand('simple-web-extension.hello', () => {
 		window.showInformationMessage('Hello from simple-web-extension!');
 	}));
-	resolveWorkspaceFolderPaths();
+	// resolveWorkspaceFolderPaths();
 
 	client = createWorkerLanguageClient(context);
 	client.start().then(() => {
@@ -33,10 +32,10 @@ export async function activate(context: ExtensionContext) {
 	// 	console.log("onDidChangeConfiguration: ", e)
 	// })
 
-	workspace.onDidChangeWorkspaceFolders(async (e) => {
-		console.log("onDidChangeWorkspaceFolders: ", e)
-		resolveWorkspaceFolderPaths();
-	})
+	// workspace.onDidChangeWorkspaceFolders(async (e) => {
+	// 	console.log("onDidChangeWorkspaceFolders: ", e)
+	// 	resolveWorkspaceFolderPaths();
+	// })
 
 }
 
