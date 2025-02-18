@@ -189,5 +189,3 @@ async function resolveRelativePath(data: any) {
     return JSON.parse(responseStr);
 }
 
-
-
