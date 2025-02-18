@@ -18,27 +18,8 @@ const browserReader = new BrowserMessageReader(self);
 const browserWriter = new BrowserMessageWriter(self);
 const connection = createConnection(browserReader, browserWriter);
 
-// TODO: Need to figure out how to detect this actual path programatically
-const sampleFileRootPath = "file:///home/dharshi/Documents/ballerina/";
-interface WorkSpaceFolderPathMap {
-    relativeFolderName: string;
-    absoluteFolderName: string;
-}
-
-// file:///folder/main.bal
-// file:///home/dharshi/Documents/ballerina/folder/main.bal
-
 connection.onInitialize(async (_params: InitializeParams): Promise<InitializeResult> => {
     console.log(_params);
-    // const workspaceFolders = _params.workspaceFolders;
-    // if (workspaceFolders) {
-    //     workspaceFolders.forEach((folder) => {
-    //         const relativeFolderName = folder.name
-    //         const absoluteFolderName = `${sampleFileRootPath}${relativeFolderName}`
-    //         folder.uri = absoluteFolderName;
-    //     });
-    //     _params.workspaceFolders = workspaceFolders;
-    // }
     const request = getRpcRequest(1, "initialize", await resolveAbsolutePath(_params))
     return sendRequestToWS(request) as Promise<InitializeResult>;
 });
@@ -153,39 +134,13 @@ function getRpcRequest(id: number, method: string, params: object | any[] | unde
     };
 }
 
-interface WorkspaceFolderPath {
-	relativePath: string,
-	absolutePath: string
-}
-
-async function getDataFromCache(key: string): Promise<WorkspaceFolderPath[]> {
-    const cache = await caches.open("custom-cache");
-    const url = new URL(key, self.location.origin);
-    const response = await cache.match(url);
-
-    if (response) {
-        return response.json() as Promise<WorkspaceFolderPath[]>;
-    }
-    return [];
-}
-
 async function resolveAbsolutePath(params: object | any | undefined) {
     let paramsStr = JSON.stringify(params);
-    // const workspaceDetails = await getDataFromCache("/workspaceFolders");
-    // console.log("workspace details from cache: ", workspaceDetails);
-    // workspaceDetails.forEach(folder => {
-    //     paramsStr = paramsStr.replace(new RegExp(folder.relativePath, 'g'), folder.absolutePath);
-    // });
     return JSON.parse(paramsStr);
 }
 
 async function resolveRelativePath(data: any) {
     let responseStr = data as string;
-    // const workspaceDetails = await getDataFromCache("/workspaceFolders");
-    // console.log("workspace details from cache: ", workspaceDetails);
-    // workspaceDetails.forEach(folder => {
-    //     responseStr = responseStr.replace(new RegExp(folder.absolutePath, 'g'), folder.relativePath);
-    // });
     return JSON.parse(responseStr);
 }
 
