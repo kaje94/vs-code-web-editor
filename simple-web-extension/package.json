@@ -10,6 +10,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onFileSystem:memory",
     "*"
   ],
   "browser": "./client/dist/browserClientMain.js",
@@ -18,6 +19,10 @@
       {
         "command": "simple-web-extension.hello",
         "title": "Hello World"
+      },
+      {
+        "command": "simple-web-extension.openGithubRepository",
+        "title": "Open GitHub Repository"
       }
     ],
     "languages": [

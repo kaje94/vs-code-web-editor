@@ -13,6 +13,7 @@
 		"vscode": "^1.85.0"
 	},
 	"dependencies": {
+		"path-browserify": "^1.0.1",
 		"vscode-jsonrpc": "^8.2.1",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver-protocol": "^3.17.5",
