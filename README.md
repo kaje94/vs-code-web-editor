@@ -7,7 +7,7 @@
 npm install
 ```
 
-- Inside web extension directory
+- Inside web extension root directory
 ```bash
 cd ./simple-web-extension
 npm install
@@ -36,13 +36,13 @@ cd ./bal-ws-lang-server
 npm run start-fs
 ```
 
-2. Start ballerina web socket language server
+3. Start ballerina web socket language server
 ```bash
 cd ./bal-ws-lang-server
 npm run start-bal
 ```
 
-3. Start vscode server
+4. Start vscode server
 ```bash
 cd ./
 npm run dev
