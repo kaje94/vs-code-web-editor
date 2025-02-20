@@ -10,7 +10,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onFileSystem:memory",
+    "onFileSystem:bala",
     "*"
   ],
   "browser": "./client/dist/browserClientMain.js",

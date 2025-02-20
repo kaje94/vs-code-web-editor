@@ -2,8 +2,7 @@ import * as vscode from 'vscode';
 import { LanguageClientOptions, LanguageClient as WorkerLanguageClient } from 'vscode-languageclient/browser';
 
 let client: WorkerLanguageClient | undefined;
-let repoInfo: { username: string, repo: string } | null = null;
-const SCHEME = 'memory';
+const SCHEME = 'bala';
 
 class BalFileSystemProvider implements vscode.FileSystemProvider {
 
@@ -12,18 +11,19 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 	async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
 		console.log("stat: ", uri.toString());
-		if (uri.path === "/") {
+		const pathSegments = uri.path.split("/").filter(segment => segment.length > 0);
+		if (pathSegments.length === 2) {
 			console.log("Trying to open a repository");
 			console.log("Starting to clone repository...");
-			const cloneResponse = await fetch(`http://localhost:9091/github/clone/${repoInfo?.username}/${repoInfo?.repo}`);
+			const cloneResponse = await fetch(`http://localhost:9091/github/clone${uri.path}`);
 			if (!cloneResponse.ok) {
 				console.log(`Failed to clone repository: ${cloneResponse.statusText}`);
 				throw new Error('Failed to fetch clone repository');
 			}
 			console.log("Clone success:", cloneResponse.status);
 		}
-		const statInfo = await fetch(`http://localhost:9091/github/stat?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/stat?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
+		const statInfo = await fetch(`http://localhost:9091/github/stat?url=${uri.path}`);
+		console.log("sending request to: ", `http://localhost:9091/github/stat?url=${uri.path}`);
 		if (!statInfo.ok) {
 			console.log(`Failed to fetch repo stats: ${statInfo.statusText}`);
 			throw new Error('Failed to fetch repo stats');
@@ -34,14 +34,10 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	}
 
 	async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
-		console.log("repoInfo: ", repoInfo);
-		if (!repoInfo) {
-			console.log("repo info not found");
-			return [];
-		}
+		console.log("read directory: ", uri.path);
 
-		const directoryInfo = await fetch(`http://localhost:9091/github/repo?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
+		const directoryInfo = await fetch(`http://localhost:9091/github/repo?url=${uri.path}`);
+		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${uri.path}`);
 		if (!directoryInfo.ok) {
 			console.log(`Failed to fetch repo contents: ${directoryInfo.statusText}`);
 			return [];
@@ -58,20 +54,20 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		console.log("readFile: ", uri.path);
-		const fileContent = await fetch(`http://localhost:9091/github/repo?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
+		const fileContent = await fetch(`http://localhost:9091/github/repo?url=${uri.path}`);
+		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${uri.path}`);
 		if (!fileContent.ok) {
 			console.log(`Failed to fetch file content: ${fileContent.statusText}`);
 			throw new Error('Failed to fetch file content');
 		}
 		const data = await fileContent.text();
-		console.log(data);
+		console.log(`${uri.path} read successfully!`);
 		return new TextEncoder().encode(data);
 	}
 
 	async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean }): Promise<void> {
 		console.log("writeFile: ", uri.toString());
-		const response = await fetch(`http://localhost:9091/github/write?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`, {
+		const response = await fetch(`http://localhost:9091/github/write?url=${uri.path}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -80,7 +76,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 				content: new TextDecoder().decode(content)   
 			})
 		});
-		console.log("sending request to: ", `http://localhost:9091/github/write?url=${repoInfo?.username}/${repoInfo?.repo}${uri.path}`);
+		console.log("sending request to: ", `http://localhost:9091/github/write?url=${uri.path}`);
 		if (!response.ok) {
 			console.log(`Failed to write to the file: ${response.statusText}`);
 			throw new Error('Failed to write to the file');
@@ -180,16 +176,16 @@ export async function activate(context: vscode.ExtensionContext) {
 		if (!repoUrl) {
 			return;
 		}
-		repoInfo = extractGitHubRepoInfo(repoUrl);
+		const repoInfo = extractGitHubRepoInfo(repoUrl);
 		if (!repoInfo) {
 			vscode.window.showErrorMessage('Invalid repository URL');
 			return;
 		}
 		vscode.workspace.updateWorkspaceFolders(0, 0, {
-			uri: vscode.Uri.parse(`${SCHEME}:/`),
+			uri: vscode.Uri.parse(`${SCHEME}:/${repoInfo.username}/${repoInfo.repo}`),
 			name: `${repoInfo.username}/${repoInfo.repo}`
 		});
-		vscode.window.showInformationMessage('Hello World from fs-web-extension in a web extension host!');
+		vscode.window.showInformationMessage('Hello World from simple-web-extension in a web extension host!');
 	}));
 
 	// Start language client
