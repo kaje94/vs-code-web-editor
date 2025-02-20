@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { LanguageClientOptions, LanguageClient as WorkerLanguageClient } from 'vscode-languageclient/browser';
 
 let client: WorkerLanguageClient | undefined;
-const SCHEME = 'bala';
 
 class BalFileSystemProvider implements vscode.FileSystemProvider {
 
@@ -86,42 +85,23 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 		this._emitter.fire([{ type: vscode.FileChangeType.Created, uri }]);
 	}
 
-	delete(uri: vscode.Uri): void {
-		// console.log("Attempting to delete: ", uri.toString());
+	async delete(uri: vscode.Uri): Promise<void> {
+		console.log("Attempting to delete: ", uri.path);
 
-		// if (!(uri.path in fileStore)) {
-		// 	throw vscode.FileSystemError.FileNotFound(uri);
-		// }
-
-		// const entry = fileStore[uri.path];
-
-		// if (entry.type === vscode.FileType.File) {
-		// 	console.log(`Deleting file: ${uri.path}`);
-
-		// 	const parent = uri.path.substring(0, uri.path.lastIndexOf('/')) || '/';
-		// 	if (fileStore[parent] && fileStore[parent].type === vscode.FileType.Directory) {
-		// 		fileStore[parent].children!.delete(uri.path);
-		// 	}
-
-		// 	delete fileStore[uri.path];
-		// }
-		// else if (entry.type === vscode.FileType.Directory) {
-		// 	console.log(`Deleting directory: ${uri.path}`);
-
-		// 	if (entry.children && entry.children.size > 0) {
-		// 		throw vscode.FileSystemError.FileIsADirectory(uri); // If directory is not empty, we cannot delete it
-		// 	}
-
-		// 	const parent = uri.path.substring(0, uri.path.lastIndexOf('/')) || '/';
-		// 	if (fileStore[parent] && fileStore[parent].type === vscode.FileType.Directory) {
-		// 		fileStore[parent].children!.delete(uri.path); // Remove the directory reference from the parent
-		// 	}
-
-		// 	delete fileStore[uri.path]; // Delete the directory from fileStore
-		// }
-
-		// this._emitter.fire([{ type: vscode.FileChangeType.Deleted, uri }]);
-		throw new Error('Method not implemented.');
+		const response = await fetch(`http://localhost:9091/github/remove?url=${uri.path}`, {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+		console.log("sending request to: ", `http://localhost:9091/github/remove?url=${uri.path}`);
+		if (!response.ok) {
+			console.log(`Failed to remove the file: ${response.statusText}`);
+			throw new Error('Failed to remove the file');
+		}
+		const data = await response.text();
+		console.log(data);
+		this._emitter.fire([{ type: vscode.FileChangeType.Deleted, uri }]);
 	}
 
 	createDirectory(uri: vscode.Uri): void {
@@ -156,6 +136,9 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	}
 }
 
+const SCHEME = 'bala';
+const provider = new BalFileSystemProvider();
+
 export async function activate(context: vscode.ExtensionContext) {
 
 	// Test command
@@ -164,7 +147,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	}));
 
 	// Register the file system provider
-	const provider = new BalFileSystemProvider();
 	context.subscriptions.push(
 		vscode.workspace.registerFileSystemProvider(SCHEME, provider, { isReadonly: false })
 	);
@@ -196,6 +178,18 @@ export async function activate(context: vscode.ExtensionContext) {
         console.error('Failed to start language client:', error);
     });
 	context.subscriptions.push(client);
+
+	// Delete folder in the fs while removing folder from the workspace
+	vscode.workspace.onDidChangeWorkspaceFolders(event => {
+		if (event.removed.length > 0) {
+		 	console.log("Removed folders:", event.removed);
+			for (const folder of event.removed) {
+				if (folder.uri.scheme === SCHEME) {
+					provider.delete(folder.uri);
+				}
+			}
+		}
+	});
 
 }
 
@@ -233,6 +227,14 @@ function extractGitHubRepoInfo(url: string): { username: string; repo: string } 
 }
 
 export async function deactivate(): Promise<void> {
+	const workspaceFolders = vscode.workspace.workspaceFolders;
+	if (workspaceFolders) {
+		for (const folder of workspaceFolders) {
+			if (folder.uri.scheme === SCHEME) {
+				provider.delete(folder.uri);
+			}
+		}
+	}
 	if (client) {
         await client.stop();
         client = undefined;
