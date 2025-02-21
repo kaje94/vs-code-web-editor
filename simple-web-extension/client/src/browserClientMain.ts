@@ -12,7 +12,6 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 		console.log("stat: ", uri.toString());
 		const pathSegments = uri.path.split("/").filter(segment => segment.length > 0);
 		if (pathSegments.length === 2) {
-			console.log("Trying to open a repository");
 			console.log("Starting to clone repository...");
 			const cloneResponse = await fetch(`http://localhost:9091/github/clone${uri.path}`);
 			if (!cloneResponse.ok) {
@@ -167,7 +166,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			uri: vscode.Uri.parse(`${SCHEME}:/${repoInfo.username}/${repoInfo.repo}`),
 			name: `${repoInfo.username}/${repoInfo.repo}`
 		});
-		vscode.window.showInformationMessage('Hello World from simple-web-extension in a web extension host!');
+		vscode.window.showInformationMessage('Cloning the repository...');
 	}));
 
 	// Start language client
