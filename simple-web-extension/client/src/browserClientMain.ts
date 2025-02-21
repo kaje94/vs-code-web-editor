@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { LanguageClientOptions, LanguageClient as WorkerLanguageClient } from 'vscode-languageclient/browser';
 
 let client: WorkerLanguageClient | undefined;
+const FS_BASE_URL = "http://localhost:9091/github";
 
 class BalFileSystemProvider implements vscode.FileSystemProvider {
 
@@ -38,8 +39,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
 		console.log("read directory: ", uri.path);
 
-		const directoryInfo = await fetch(`http://localhost:9091/github/repo?url=${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${uri.path}`);
+		const directoryInfo = await fetch(`${FS_BASE_URL}/repo?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/repo?url=${uri.path}`);
 		if (!directoryInfo.ok) {
 			console.log(`Failed to fetch repo contents: ${directoryInfo.statusText}`);
 			return [];
@@ -56,8 +57,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		console.log("readFile: ", uri.path);
-		const fileContent = await fetch(`http://localhost:9091/github/repo?url=${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/repo?url=${uri.path}`);
+		const fileContent = await fetch(`${FS_BASE_URL}/repo?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/repo?url=${uri.path}`);
 		if (!fileContent.ok) {
 			console.log(`Failed to fetch file content: ${fileContent.statusText}`);
 			throw new Error('Failed to fetch file content');
@@ -70,7 +71,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean }): Promise<void> {
 		console.log("writeFile: ", uri.toString(), " ", options);
 
-		const response = await fetch(`http://localhost:9091/github/write?url=${uri.path}`, {
+		const response = await fetch(`${FS_BASE_URL}/write?url=${uri.path}`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json"
@@ -79,7 +80,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 				content: new TextDecoder().decode(content)   
 			})
 		});
-		console.log("sending request to: ", `http://localhost:9091/github/write?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/write?url=${uri.path}`);
 		if (!response.ok) {
 			console.log(`Failed to write to the file: ${response.statusText}`);
 			throw new Error('Failed to write to the file');
@@ -92,13 +93,13 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async delete(uri: vscode.Uri): Promise<void> {
 		console.log("Attempting to delete: ", uri.path);
 
-		const response = await fetch(`http://localhost:9091/github/remove?url=${uri.path}`, {
+		const response = await fetch(`${FS_BASE_URL}/remove?url=${uri.path}`, {
 			method: "DELETE",
 			headers: {
 				"Content-Type": "application/json"
 			}
 		});
-		console.log("sending request to: ", `http://localhost:9091/github/remove?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/remove?url=${uri.path}`);
 		if (!response.ok) {
 			console.log(`Failed to remove the file: ${response.statusText}`);
 			throw new Error('Failed to remove the file');
@@ -108,35 +109,73 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 		this._emitter.fire([{ type: vscode.FileChangeType.Deleted, uri }]);
 	}
 
-	createDirectory(uri: vscode.Uri): void {
-		// console.log("createDirectory: ", uri.toString());
-
-		// if (uri.path in fileStore) {
-		// 	throw vscode.FileSystemError.FileExists(uri);
-		// }
-
-		// const parent = uri.path.substring(0, uri.path.lastIndexOf('/')) || '/';
-		// if (!(parent in fileStore) || fileStore[parent].type !== vscode.FileType.Directory) {
-		// 	throw vscode.FileSystemError.FileNotFound(`Parent folder does not exist: ${parent}`);
-		// }
-
-		// fileStore[uri.path] = { type: vscode.FileType.Directory, children: new Set() };
-		// fileStore[parent].children!.add(uri.path);
-
-		// this._emitter.fire([{ type: vscode.FileChangeType.Created, uri }]);
-		throw new Error('Method not implemented.');
+	async createDirectory(uri: vscode.Uri): Promise<void> {
+		console.log("creating directory: ", uri.path)
+		const response = await fetch(`${FS_BASE_URL}/mkdir?url=${uri.path}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+		console.log("sending request to: ", `${FS_BASE_URL}/mkdir?url=${uri.path}`);
+		if (!response.ok) {
+			console.log(`Failed to create file: ${response.statusText}`);
+			throw new Error('Failed to create file');
+		}
+		const data = await response.text();
+		console.log(data);
+		this._emitter.fire([{ type: vscode.FileChangeType.Created, uri }]);
 	}
 
-	rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): void {
-		throw new Error('Method not implemented.');
+	async rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean }): Promise<void> {
+		console.log("creating directory: ", oldUri.path)
+		const response = await fetch(`${FS_BASE_URL}/rename?oldUrl=${oldUri.path}&newUrl=${newUri.path}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			}
+		});
+		console.log("sending request to: ", `${FS_BASE_URL}/rename?oldUrl=${oldUri.path}&newUrl=${newUri.path}`);
+		if (!response.ok) {
+			console.log(`Failed to rename: ${response.statusText}`);
+			throw new Error('Failed to rename');
+		}
+		const data = await response.text();
+		console.log(data);
+		this._emitter.fire([
+			{ type: vscode.FileChangeType.Deleted, uri: oldUri },
+			{ type: vscode.FileChangeType.Created, uri: newUri }
+		]);
 	}
 
 	watch(uri: vscode.Uri, options: { recursive: boolean, excludes: string[] }): vscode.Disposable {
 		return new vscode.Disposable(() => { });
 	}
 
-	copy?(source: vscode.Uri, destination: vscode.Uri, options: { readonly overwrite: boolean; }): void | Thenable<void> {
-		throw new Error('Method not implemented.');
+	async copy(source: vscode.Uri, destination: vscode.Uri, options: { overwrite: boolean }): Promise<void> {		console.log("copying: ", source, destination, options);
+
+		const response = await fetch(`${FS_BASE_URL}/copy`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify({
+				source: source.path,
+				destination: destination.path,
+				overwright: options.overwrite
+			})
+		});
+		console.log("sending request to: ", `${FS_BASE_URL}/copy`);
+		if (!response.ok) {
+			console.log(`Failed to copy: ${response.statusText}`);
+			throw new Error('Failed to copy');
+		}
+		const data = await response.text();
+		console.log(data);
+		this._emitter.fire([
+			{ type: vscode.FileChangeType.Created, uri: destination },
+			{ type: vscode.FileChangeType.Changed, uri: source }
+		]);
 	}
 }
 

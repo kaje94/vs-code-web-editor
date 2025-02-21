@@ -49,7 +49,7 @@ app.use('/github/repo', (req: Request, res: Response, next: NextFunction) => {
         console.log("requested is a directory")
         fs.readdir(userRepoPath, (err, files) => {
             if (err) {
-                return res.status(500).send('Unable to read directory');
+                res.status(500).send('Unable to read directory');
             }
 
             const fileList = files.map(file => {
@@ -93,6 +93,77 @@ app.delete('/github/remove', (req: Request, res: Response) => {
         if (err) res.status(500).send(`Error removing path: ${err.message}`);
         res.send(`Path ${inputPath} removed successfully.`);
     });
+});
+
+// create directory
+app.post('/github/mkdir', (req: Request, res: Response) => {
+    const dirPath = path.join(BASE_DIR, req.query.url as string);
+
+    // Check if the directory already exists
+    if (!fs.existsSync(dirPath)) {
+        try {
+            fs.mkdirSync(dirPath, { recursive: true }); 
+            console.log(`Directory created successfully: ${dirPath}`);
+            res.status(200).send('Directory created successfully');
+        } catch (err) {
+            console.error(`Error creating directory.`);
+            res.status(500).send('Unable to create directory');
+        }
+    }
+    console.log(`Directory already exists: ${dirPath}`);
+    res.status(403).send('Directory already exists');
+});
+
+// Renaming file
+app.post('/github/rename', (req: Request, res: Response) => {
+    const oldPath = path.join(BASE_DIR, req.query.oldUrl as string);
+    const newPath = path.join(BASE_DIR, req.query.newUrl as string);
+
+    // Check if the source file/folder exists
+    if (!fs.existsSync(oldPath)) {
+        res.status(404).send('Source file or folder not found');
+    }
+
+    try {
+        fs.renameSync(oldPath, newPath); // Rename file or folder
+        console.log(`Renamed: ${oldPath} -> ${newPath}`);
+        res.status(200).send('Rename successful');
+    } catch (err) {
+        console.error(`Error renaming: ${err}`);
+        res.status(500).send('Unable to rename file or folder');
+    }
+});
+
+app.post('/github/copy', (req: Request, res: Response) => {
+    const { source, destination, overwrite } = req.body;
+
+    if (!source || !destination) {
+        res.status(400).send('Source and destination paths are required.');
+    }
+
+    const sourcePath = path.join(BASE_DIR, source);
+    const destinationPath = path.join(BASE_DIR, destination);
+
+    if (!fs.existsSync(sourcePath)) {
+        res.status(404).send('Source file or folder not found.');
+    }
+
+    if (fs.existsSync(destinationPath) && !overwrite) {
+        res.status(409).send('Destination already exists and overwrite is not allowed.');
+    }
+
+    try {
+        const stat = fs.statSync(sourcePath);
+        if (stat.isDirectory()) {
+            fs.cpSync(sourcePath, destinationPath, { recursive: true });
+        } else {
+            fs.copyFileSync(sourcePath, destinationPath);
+        }
+        res.status(200).send('Copy successful');
+    } catch (error) {
+        console.error('Copy error:', error);
+        res.status(500).send(`Failed to copy: ${error}`);
+    }
 });
 
 app.listen(PORT, () => {
