@@ -133,11 +133,9 @@ function getRpcRequest(id: number, method: string, params: object | any[] | unde
         params: params
     };
 }
-// bala:/DharshiBalasubramaniyam/ipa-usecase-1/main.bal
-// http://localhost:9091/github/repo?url=/DharshiBalasubramaniyam/ipa-usecase-1/main.bal
+
 async function resolveAbsolutePath(params: object | any | undefined) {
     let paramsStr = JSON.stringify(params);
-    // paramsStr = paramsStr.replace(new RegExp("bala:", 'g'), "http://localhost:9091/github/repo?url=");
     return JSON.parse(paramsStr);
 }
 

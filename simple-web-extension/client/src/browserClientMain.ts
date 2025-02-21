@@ -180,7 +180,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 }
 
 const SCHEME = 'bala';
-const provider = new BalFileSystemProvider();
+const fsProvider = new BalFileSystemProvider();
 
 export async function activate(context: vscode.ExtensionContext) {
 
@@ -191,9 +191,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Register the file system provider
 	context.subscriptions.push(
-		vscode.workspace.registerFileSystemProvider(SCHEME, provider, { isReadonly: false })
+		vscode.workspace.registerFileSystemProvider(SCHEME, fsProvider, { isReadonly: false })
 	);
-	console.log("Memory file system provider registered.");
 
 	// Register the command to open a github repository
 	context.subscriptions.push(vscode.commands.registerCommand('simple-web-extension.openGithubRepository', async () => {
@@ -206,7 +205,7 @@ export async function activate(context: vscode.ExtensionContext) {
 			vscode.window.showErrorMessage('Invalid repository URL');
 			return;
 		}
-		vscode.workspace.updateWorkspaceFolders(0, 0, {
+		vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders.length, 0, {
 			uri: vscode.Uri.parse(`${SCHEME}:/${repoInfo.username}/${repoInfo.repo}`),
 			name: `${repoInfo.username}/${repoInfo.repo}`
 		});
@@ -228,7 +227,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		 	console.log("Removed folders:", event.removed);
 			for (const folder of event.removed) {
 				if (folder.uri.scheme === SCHEME) {
-					provider.delete(folder.uri);
+					fsProvider.delete(folder.uri);
 				}
 			}
 		}
@@ -274,7 +273,7 @@ export async function deactivate(): Promise<void> {
 	if (workspaceFolders) {
 		for (const folder of workspaceFolders) {
 			if (folder.uri.scheme === SCHEME) {
-				provider.delete(folder.uri);
+				fsProvider.delete(folder.uri);
 			}
 		}
 	}
