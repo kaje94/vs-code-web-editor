@@ -35,7 +35,7 @@ app.get('/github/clone/:userId/:repoName', async (req: Request, res: Response) =
 app.get('/github/stat', (req: Request, res: Response) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);
     if (!fs.existsSync(userRepoPath)) {
-        res.send({ isDirectory: false, ctime: 0, mtime: 0, size: 0 });
+        res.status(404).send(`${req.query.url} not found.`);
     }
     const stats = fs.statSync(userRepoPath);
     res.send({ isDirectory: stats.isDirectory(), ctime: 0, mtime: 0, size: stats.size });
@@ -77,9 +77,6 @@ app.use('/github/repo', (req: Request, res: Response, next: NextFunction) => {
 app.post('/github/write', (req: Request, res: Response) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);
     const { content } = req.body;
-    if (!fs.existsSync(userRepoPath)) {
-        res.status(404).json({ error: "File not found." });
-    }
     fs.writeFile(userRepoPath, content, (err) => {  
         if (err) {
             return res.status(500).send('Unable to write file');

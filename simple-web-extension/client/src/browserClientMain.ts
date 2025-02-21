@@ -11,6 +11,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
 		console.log("stat: ", uri.toString());
 		const pathSegments = uri.path.split("/").filter(segment => segment.length > 0);
+
 		if (pathSegments.length === 2) {
 			console.log("Starting to clone repository...");
 			const cloneResponse = await fetch(`http://localhost:9091/github/clone${uri.path}`);
@@ -20,9 +21,12 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 			}
 			console.log("Clone success:", cloneResponse.status);
 		}
+
 		const statInfo = await fetch(`http://localhost:9091/github/stat?url=${uri.path}`);
 		console.log("sending request to: ", `http://localhost:9091/github/stat?url=${uri.path}`);
-		if (!statInfo.ok) {
+		if (statInfo.status == 404) {
+			throw vscode.FileSystemError.FileNotFound(uri);
+		} else if (!statInfo.ok) {
 			console.log(`Failed to fetch repo stats: ${statInfo.statusText}`);
 			throw new Error('Failed to fetch repo stats');
 		}
@@ -64,7 +68,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	}
 
 	async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean }): Promise<void> {
-		console.log("writeFile: ", uri.toString());
+		console.log("writeFile: ", uri.toString(), " ", options);
+
 		const response = await fetch(`http://localhost:9091/github/write?url=${uri.path}`, {
 			method: "POST",
 			headers: {
