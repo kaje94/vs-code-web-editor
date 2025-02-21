@@ -10,7 +10,7 @@ const git: SimpleGit = simpleGit();
 app.use(cors());
 app.use(express.json());
 
-const BASE_DIR: string = path.join(__dirname); // Base directory for all repos
+export const BASE_DIR: string = path.join(path.resolve(__dirname, '..'), 'repos'); // Base directory for all repos
 const getRepoPath = (userId: string, repoName: string): string => path.join(BASE_DIR, userId, repoName);
 
 // cloning the repo

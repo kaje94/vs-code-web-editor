@@ -24,6 +24,7 @@ import {
   type ResponseMessage,
   NotificationMessage,
 } from "vscode-languageserver-protocol";
+import { BASE_DIR } from "./fs";
 
 export enum LanguageName {
   bal = "bal",
@@ -72,9 +73,9 @@ export const launchLanguageServer = (
     forward(socketConnection, serverConnection, (message) => {
       let messageStr = JSON.stringify(message);
       if (messageStr.includes("bala:")) {
-        messageStr = messageStr.replace(new RegExp("bala:", 'g'), `file://${__dirname}`);
-      } else if (messageStr.includes(`file://${__dirname}`)) {
-        messageStr = messageStr.replace(new RegExp(`file://${__dirname}`, 'g'), `bala:`);
+        messageStr = messageStr.replace(new RegExp("bala:", 'g'), `file://${BASE_DIR}`);
+      } else if (messageStr.includes(`file://${BASE_DIR}`)) {
+        messageStr = messageStr.replace(new RegExp(`file://${BASE_DIR}`, 'g'), `bala:`);
       }
       message = JSON.parse(messageStr);
 
