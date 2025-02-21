@@ -3,7 +3,7 @@ import { WebSocketServer, type ServerOptions } from "ws";
 import { IncomingMessage, Server } from "node:http";
 import { URL } from "node:url";
 import { Socket } from "node:net";
-import { dirname } from "node:path";
+import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cp from "node:child_process";
 import {
@@ -70,6 +70,14 @@ export const launchLanguageServer = (
   );
   if (serverConnection !== undefined) {
     forward(socketConnection, serverConnection, (message) => {
+      let messageStr = JSON.stringify(message);
+      if (messageStr.includes("bala:")) {
+        messageStr = messageStr.replace(new RegExp("bala:", 'g'), `file://${__dirname}`);
+      } else if (messageStr.includes(`file://${__dirname}`)) {
+        messageStr = messageStr.replace(new RegExp(`file://${__dirname}`, 'g'), `bala:`);
+      }
+      message = JSON.parse(messageStr);
+
       if (Message.isRequest(message)) {
         if (message.method === InitializeRequest.type.method) {
           const initializeParams = message.params as InitializeParams;
