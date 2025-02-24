@@ -39,8 +39,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
 		console.log("read directory: ", uri.path);
 
-		const directoryInfo = await fetch(`${FS_BASE_URL}/repo?url=${uri.path}`);
-		console.log("sending request to: ", `${FS_BASE_URL}/repo?url=${uri.path}`);
+		const directoryInfo = await fetch(`${FS_BASE_URL}/read?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}`);
 		if (!directoryInfo.ok) {
 			console.log(`Failed to fetch repo contents: ${directoryInfo.statusText}`);
 			return [];
@@ -57,8 +57,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		console.log("readFile: ", uri.path);
-		const fileContent = await fetch(`${FS_BASE_URL}/repo?url=${uri.path}`);
-		console.log("sending request to: ", `${FS_BASE_URL}/repo?url=${uri.path}`);
+		const fileContent = await fetch(`${FS_BASE_URL}/read?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}`);
 		if (!fileContent.ok) {
 			console.log(`Failed to fetch file content: ${fileContent.statusText}`);
 			throw new Error('Failed to fetch file content');
