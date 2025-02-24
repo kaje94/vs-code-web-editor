@@ -21,8 +21,8 @@ export class BalFileSystemProvider implements vscode.FileSystemProvider {
 			console.log("Clone success:", cloneResponse.status);
 		}
 
-		const statInfo = await fetch(`${FS_BASE_URL}/stat?url=${uri.path}`);
-		console.log("sending request to: ", `${FS_BASE_URL}/stat?url=${uri.path}`);
+		const statInfo = await fetch(`${FS_BASE_URL}/stat?url=${uri.path}&scheme=${uri.scheme}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/stat?url=${uri.path}&scheme=${uri.scheme}`);
 		if (statInfo.status == 404) {
 			throw vscode.FileSystemError.FileNotFound(uri);
 		} else if (!statInfo.ok) {
@@ -37,8 +37,8 @@ export class BalFileSystemProvider implements vscode.FileSystemProvider {
 	async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
 		console.log("read directory: ", uri.path);
 
-		const directoryInfo = await fetch(`${FS_BASE_URL}/read?url=${uri.path}`);
-		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}`);
+		const directoryInfo = await fetch(`${FS_BASE_URL}/read?url=${uri.path}&scheme=${uri.scheme}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}&scheme=${uri.scheme}`);
 		if (!directoryInfo.ok) {
 			console.log(`Failed to fetch repo contents: ${directoryInfo.statusText}`);
 			return [];
@@ -55,8 +55,8 @@ export class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 	async readFile(uri: vscode.Uri): Promise<Uint8Array> {
 		console.log("readFile: ", uri.path);
-		const fileContent = await fetch(`${FS_BASE_URL}/read?url=${uri.path}`);
-		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}`);
+		const fileContent = await fetch(`${FS_BASE_URL}/read?url=${uri.path}&scheme=${uri.scheme}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/read?url=${uri.path}&scheme=${uri.scheme}`);
 		if (!fileContent.ok) {
 			console.log(`Failed to fetch file content: ${fileContent.statusText}`);
 			throw new Error('Failed to fetch file content');

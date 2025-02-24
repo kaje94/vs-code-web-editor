@@ -2,13 +2,15 @@ import express, { Request, Response, NextFunction } from 'express';
 import * as path from "path";
 import * as fs from "fs";
 import simpleGit, { SimpleGit } from "simple-git";
+import { SCHEME } from '../bal_ls/models';
 
 const fsRouter = express.Router();
 const git: SimpleGit = simpleGit();
+
 export const BASE_DIR: string = path.join(path.resolve(__dirname, '../..'), 'repos'); // Base directory for all repos
 
 fsRouter.get("/clone/:userId/:repoName", async (req: Request, res: Response) => {
-    const { userId, repoName } = req.params; 
+    const { userId, repoName } = req.params;
     const userRepoPath = path.join(BASE_DIR, userId, repoName);
     console.log("cloning into: ", userRepoPath)
     if (fs.existsSync(userRepoPath)) {
@@ -25,7 +27,9 @@ fsRouter.get("/clone/:userId/:repoName", async (req: Request, res: Response) => 
 })
 
 fsRouter.get("/stat", (req: Request, res: Response) => {
-    const userRepoPath = path.join(BASE_DIR, req.query.url as string);
+    const inputScheme = req.query.scheme as string;
+    const inputUrl = req.query.url as string;
+    const userRepoPath = inputScheme === SCHEME ? path.join(BASE_DIR, inputUrl) : inputUrl;
     if (!fs.existsSync(userRepoPath)) {
         res.status(404).send(`${req.query.url} not found.`);
     }
@@ -34,8 +38,11 @@ fsRouter.get("/stat", (req: Request, res: Response) => {
 })
 
 fsRouter.get("/read", (req: Request, res: Response, next: NextFunction) => {
-    const userRepoPath = path.join(BASE_DIR, req.query.url as string);;
+    const inputScheme = req.query.scheme as string;
+    const inputUrl = req.query.url as string;
+    const userRepoPath = inputScheme === SCHEME ? path.join(BASE_DIR, inputUrl) : inputUrl;
     console.log("searching repo: ", userRepoPath)
+
     if (fs.statSync(userRepoPath).isDirectory()) {
         console.log("requested is a directory")
         fs.readdir(userRepoPath, (err, files) => {
@@ -55,6 +62,7 @@ fsRouter.get("/read", (req: Request, res: Response, next: NextFunction) => {
         });
     } else if (fs.statSync(userRepoPath).isFile()) {
         console.log("requested is a file: ", userRepoPath)
+
         fs.readFile(userRepoPath, 'utf8', (err, data) => {
             if (err) {
                 return res.status(500).send('Unable to read file');
@@ -64,10 +72,10 @@ fsRouter.get("/read", (req: Request, res: Response, next: NextFunction) => {
     }
 })
 
-fsRouter.post("/write",  (req: Request, res: Response) => {
+fsRouter.post("/write", (req: Request, res: Response) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);
     const { content } = req.body;
-    fs.writeFile(userRepoPath, content, (err) => {  
+    fs.writeFile(userRepoPath, content, (err) => {
         if (err) {
             return res.status(500).send('Unable to write file');
         }
@@ -90,7 +98,7 @@ fsRouter.post("/mdir", (req: Request, res: Response) => {
     // Check if the directory already exists
     if (!fs.existsSync(dirPath)) {
         try {
-            fs.mkdirSync(dirPath, { recursive: true }); 
+            fs.mkdirSync(dirPath, { recursive: true });
             console.log(`Directory created successfully: ${dirPath}`);
             res.status(200).send('Directory created successfully');
         } catch (err) {

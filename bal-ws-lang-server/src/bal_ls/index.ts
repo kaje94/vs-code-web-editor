@@ -139,9 +139,3 @@ export const launchLanguageServer = ( runconfig: LanguageServerRunConfig, socket
     });
   }
 };
-
-
-
-
-
-
