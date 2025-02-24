@@ -3,6 +3,8 @@ import * as path from "path";
 import * as fs from "fs";
 import cors from "cors";
 import simpleGit, { SimpleGit } from "simple-git";
+import { runBalServer } from './bal';
+import { Server } from "node:http";
 
 const app: Express = express();
 const PORT: number = 9091;
@@ -166,6 +168,9 @@ app.post('/github/copy', (req: Request, res: Response) => {
     }
 });
 
-app.listen(PORT, () => {
+const httpServer: Server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+
+runBalServer(httpServer)

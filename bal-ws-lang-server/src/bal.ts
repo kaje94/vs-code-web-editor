@@ -166,7 +166,8 @@ export const upgradeWsServer = (
 
 /** LSP server runner */
 export const runLanguageServer = (
-  languageServerRunConfig: LanguageServerRunConfig
+  languageServerRunConfig: LanguageServerRunConfig,
+  httpServer: Server
 ) => {
   process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception: ", err.toString());
@@ -176,9 +177,9 @@ export const runLanguageServer = (
   });
 
   // create the express application
-  const app = express();
+  // const app = express();
   // start the http server
-  const httpServer: Server = app.listen(languageServerRunConfig.serverPort);
+  // const httpServer: Server = app.listen(languageServerRunConfig.serverPort);
   const wss = new WebSocketServer(languageServerRunConfig.wsServerOptions);
   // create the web socket
   upgradeWsServer(languageServerRunConfig, {
@@ -187,7 +188,7 @@ export const runLanguageServer = (
   });
 };
 
-export const runBalServer = () => {
+export const runBalServer = (httpServer: Server) => {
   runLanguageServer({
     serverName: "bal",
     pathName: "/bal",
@@ -215,7 +216,5 @@ export const runBalServer = () => {
       // },
     },
     logMessages: true,
-  });
+  }, httpServer = httpServer);
 };
-
-runBalServer();
