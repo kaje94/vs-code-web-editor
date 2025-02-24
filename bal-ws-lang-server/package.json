@@ -5,8 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "compile": "tsc",
-    "start-bal": "npm run compile && node dist/bal.js",
-    "start-fs": "npm run compile && node dist/fs.js"
+    "start": "npm run compile && node dist/fs.js"
   },
   "keywords": [],
   "author": "",
