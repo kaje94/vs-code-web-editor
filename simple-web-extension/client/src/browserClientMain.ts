@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { LanguageClientOptions, LanguageClient as WorkerLanguageClient } from 'vscode-languageclient/browser';
 
 let client: WorkerLanguageClient | undefined;
-const FS_BASE_URL = "http://localhost:9091/github";
+const FS_BASE_URL = "http://localhost:9091/fs";
 
 class BalFileSystemProvider implements vscode.FileSystemProvider {
 
@@ -15,7 +15,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 
 		if (pathSegments.length === 2) {
 			console.log("Starting to clone repository...");
-			const cloneResponse = await fetch(`http://localhost:9091/github/clone${uri.path}`);
+			const cloneResponse = await fetch(`${FS_BASE_URL}/clone${uri.path}`);
 			if (!cloneResponse.ok) {
 				console.log(`Failed to clone repository: ${cloneResponse.statusText}`);
 				throw new Error('Failed to fetch clone repository');
@@ -23,8 +23,8 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 			console.log("Clone success:", cloneResponse.status);
 		}
 
-		const statInfo = await fetch(`http://localhost:9091/github/stat?url=${uri.path}`);
-		console.log("sending request to: ", `http://localhost:9091/github/stat?url=${uri.path}`);
+		const statInfo = await fetch(`${FS_BASE_URL}/stat?url=${uri.path}`);
+		console.log("sending request to: ", `${FS_BASE_URL}/stat?url=${uri.path}`);
 		if (statInfo.status == 404) {
 			throw vscode.FileSystemError.FileNotFound(uri);
 		} else if (!statInfo.ok) {
@@ -179,7 +179,7 @@ class BalFileSystemProvider implements vscode.FileSystemProvider {
 	}
 }
 
-const SCHEME = 'bala';
+const SCHEME = 'web-bala';
 const fsProvider = new BalFileSystemProvider();
 
 export async function activate(context: vscode.ExtensionContext) {

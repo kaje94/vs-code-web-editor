@@ -24,11 +24,13 @@ import {
   type ResponseMessage,
   NotificationMessage,
   RegistrationParams,
+  RegistrationRequest,
+  CompletionRequest,
 } from "vscode-languageserver-protocol";
 import { BASE_DIR } from "./fs";
 
 export enum LanguageName {
-  bal = "bal",
+  ballerina = "ballerina"
 }
 
 export interface LanguageServerRunConfig {
@@ -44,6 +46,8 @@ export interface LanguageServerRunConfig {
   responseMessageHandler?: (message: ResponseMessage) => ResponseMessage;
   NotificationMessageHandler?: (message: NotificationMessage) => NotificationMessage;
 }
+
+export const SCHEME = "web-bala"
 
 export const getLocalDirectory = (referenceUrl: string | URL) => {
   const __filename = fileURLToPath(referenceUrl);
@@ -72,26 +76,17 @@ export const launchLanguageServer = (
   );
   if (serverConnection !== undefined) {
     forward(socketConnection, serverConnection, (message) => {
-
-      let messageStr = JSON.stringify(message);
-      if (messageStr.includes("bala:")) { // messages from client
-        messageStr = messageStr.replace(new RegExp("bala:", 'g'), `file://${BASE_DIR}`);
-      } else if (messageStr.includes(`${BASE_DIR}`)) { // messages from lang server
-        messageStr = messageStr.replace(new RegExp(`file://${BASE_DIR}`, 'g'), `bala:`);
-        messageStr = messageStr.replace(new RegExp(`${BASE_DIR}`, 'g'), "");
-      }
-      message = JSON.parse(messageStr);
+      message = resolvePath(JSON.stringify(message));
 
       if (Message.isRequest(message)) {
         if (message.method === InitializeRequest.type.method) {
           const initializeParams = message.params as InitializeParams;
           initializeParams.processId = process.pid;
-        } else if (message.method === "client/registerCapability") {
+        } else if (message.method === RegistrationRequest.method) {
           const registrationParams = message.params as RegistrationParams;
-          if (registrationParams.registrations.length > 0 
-            && registrationParams.registrations[0].method === "textDocument/completion") {
+          if (registrationParams.registrations.length > 0) {
               registrationParams.registrations[0].registerOptions
-              .documentSelector.push({language: "ballerina", scheme: "bala"})
+              .documentSelector.push({language: LanguageName.ballerina, scheme: `${SCHEME}`})
           }
         }
 
@@ -114,7 +109,7 @@ export const launchLanguageServer = (
       }
       if (Message.isNotification(message)) {
         if (runconfig.logMessages ?? false) {
-          console.log(`${serverName} Server sent/recieved notification:`);
+          console.log(`${serverName} Server sent/received notification:`);
           console.log(message);
         }
         if (runconfig.NotificationMessageHandler !== undefined) {
@@ -125,6 +120,16 @@ export const launchLanguageServer = (
     });
   }
 };
+
+const resolvePath = (message: string) => {
+  if (message.includes( `${SCHEME}:`)) { // messages from client
+    message = message.replace(new RegExp(`${SCHEME}:`, 'g'), `file://${BASE_DIR}`);
+  } else if (message.includes(`${BASE_DIR}`)) { // messages from lang server
+    message = message.replace(new RegExp(`file://${BASE_DIR}`, 'g'), `${SCHEME}:`);
+    message = message.replace(new RegExp(`${BASE_DIR}`, 'g'), "");
+  }
+  return JSON.parse(message);
+}
 
 export const upgradeWsServer = (
   runconfig: LanguageServerRunConfig,
@@ -202,7 +207,7 @@ export const runBalServer = (httpServer: Server) => {
     serverName: "bal",
     pathName: "/bal",
     serverPort: 9090,
-    runCommand: LanguageName.bal,
+    runCommand: "bal",
     runCommandArgs: ["start-language-server"],
     wsServerOptions: {
       noServer: true,

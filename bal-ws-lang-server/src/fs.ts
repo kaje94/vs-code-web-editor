@@ -16,7 +16,7 @@ export const BASE_DIR: string = path.join(path.resolve(__dirname, '..'), 'repos'
 const getRepoPath = (userId: string, repoName: string): string => path.join(BASE_DIR, userId, repoName);
 
 // cloning the repo
-app.get('/github/clone/:userId/:repoName', async (req: Request, res: Response) => {
+app.get('/fs/clone/:userId/:repoName', async (req: Request, res: Response) => {
     const { userId, repoName } = req.params; 
     const userRepoPath = getRepoPath(userId, repoName);
     console.log("cloning into: ", userRepoPath)
@@ -34,7 +34,7 @@ app.get('/github/clone/:userId/:repoName', async (req: Request, res: Response) =
 });
 
 // get the stat of the repo content
-app.get('/github/stat', (req: Request, res: Response) => {
+app.get('/fs/stat', (req: Request, res: Response) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);
     if (!fs.existsSync(userRepoPath)) {
         res.status(404).send(`${req.query.url} not found.`);
@@ -44,7 +44,7 @@ app.get('/github/stat', (req: Request, res: Response) => {
 });
 
 // get the files and folders in a repo
-app.use('/github/repo', (req: Request, res: Response, next: NextFunction) => {
+app.use('/fs/repo', (req: Request, res: Response, next: NextFunction) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);;
     console.log("searching repo: ", userRepoPath)
     if (fs.statSync(userRepoPath).isDirectory()) {
@@ -76,7 +76,7 @@ app.use('/github/repo', (req: Request, res: Response, next: NextFunction) => {
 });
 
 // write to a file
-app.post('/github/write', (req: Request, res: Response) => {
+app.post('/fs/write', (req: Request, res: Response) => {
     const userRepoPath = path.join(BASE_DIR, req.query.url as string);
     const { content } = req.body;
     fs.writeFile(userRepoPath, content, (err) => {  
@@ -88,7 +88,7 @@ app.post('/github/write', (req: Request, res: Response) => {
 });
 
 // delete a file/folder
-app.delete('/github/remove', (req: Request, res: Response) => {
+app.delete('/fs/remove', (req: Request, res: Response) => {
     const inputPath = path.join(BASE_DIR, req.query.url as string);
 
     fs.rm(inputPath, { recursive: true, force: true }, (err) => {
@@ -98,7 +98,7 @@ app.delete('/github/remove', (req: Request, res: Response) => {
 });
 
 // create directory
-app.post('/github/mkdir', (req: Request, res: Response) => {
+app.post('/fs/mkdir', (req: Request, res: Response) => {
     const dirPath = path.join(BASE_DIR, req.query.url as string);
 
     // Check if the directory already exists
@@ -117,7 +117,7 @@ app.post('/github/mkdir', (req: Request, res: Response) => {
 });
 
 // Renaming file
-app.post('/github/rename', (req: Request, res: Response) => {
+app.post('/fs/rename', (req: Request, res: Response) => {
     const oldPath = path.join(BASE_DIR, req.query.oldUrl as string);
     const newPath = path.join(BASE_DIR, req.query.newUrl as string);
 
@@ -136,7 +136,7 @@ app.post('/github/rename', (req: Request, res: Response) => {
     }
 });
 
-app.post('/github/copy', (req: Request, res: Response) => {
+app.post('/fs/copy', (req: Request, res: Response) => {
     const { source, destination, overwrite } = req.body;
 
     if (!source || !destination) {
