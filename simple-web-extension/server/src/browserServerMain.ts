@@ -8,7 +8,7 @@ import {
 } from 'vscode-languageserver/browser';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
-const ws = new WebSocket(`ws://localhost:9090/bal`);
+const ws = new WebSocket(`ws://localhost:9091/bal`);
 
 ws.onopen = () => {
     console.log('Connected to WebSocket server');

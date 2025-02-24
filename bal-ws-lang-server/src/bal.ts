@@ -23,6 +23,7 @@ import {
   type RequestMessage,
   type ResponseMessage,
   NotificationMessage,
+  RegistrationParams,
 } from "vscode-languageserver-protocol";
 import { BASE_DIR } from "./fs";
 
@@ -71,10 +72,11 @@ export const launchLanguageServer = (
   );
   if (serverConnection !== undefined) {
     forward(socketConnection, serverConnection, (message) => {
+
       let messageStr = JSON.stringify(message);
-      if (messageStr.includes("bala:")) {
+      if (messageStr.includes("bala:")) { // messages from client
         messageStr = messageStr.replace(new RegExp("bala:", 'g'), `file://${BASE_DIR}`);
-      } else if (messageStr.includes(`${BASE_DIR}`)) {
+      } else if (messageStr.includes(`${BASE_DIR}`)) { // messages from lang server
         messageStr = messageStr.replace(new RegExp(`file://${BASE_DIR}`, 'g'), `bala:`);
         messageStr = messageStr.replace(new RegExp(`${BASE_DIR}`, 'g'), "");
       }
@@ -84,6 +86,13 @@ export const launchLanguageServer = (
         if (message.method === InitializeRequest.type.method) {
           const initializeParams = message.params as InitializeParams;
           initializeParams.processId = process.pid;
+        } else if (message.method === "client/registerCapability") {
+          const registrationParams = message.params as RegistrationParams;
+          if (registrationParams.registrations.length > 0 
+            && registrationParams.registrations[0].method === "textDocument/completion") {
+              registrationParams.registrations[0].registerOptions
+              .documentSelector.push({language: "ballerina", scheme: "bala"})
+          }
         }
 
         if (runconfig.logMessages ?? false) {
@@ -166,7 +175,8 @@ export const upgradeWsServer = (
 
 /** LSP server runner */
 export const runLanguageServer = (
-  languageServerRunConfig: LanguageServerRunConfig
+  languageServerRunConfig: LanguageServerRunConfig,
+  httpServer: Server
 ) => {
   process.on("uncaughtException", (err) => {
     console.error("Uncaught Exception: ", err.toString());
@@ -176,9 +186,9 @@ export const runLanguageServer = (
   });
 
   // create the express application
-  const app = express();
+  // const app = express();
   // start the http server
-  const httpServer: Server = app.listen(languageServerRunConfig.serverPort);
+  // const httpServer: Server = app.listen(languageServerRunConfig.serverPort);
   const wss = new WebSocketServer(languageServerRunConfig.wsServerOptions);
   // create the web socket
   upgradeWsServer(languageServerRunConfig, {
@@ -187,7 +197,7 @@ export const runLanguageServer = (
   });
 };
 
-export const runBalServer = () => {
+export const runBalServer = (httpServer: Server) => {
   runLanguageServer({
     serverName: "bal",
     pathName: "/bal",
@@ -215,7 +225,5 @@ export const runBalServer = () => {
       // },
     },
     logMessages: true,
-  });
+  }, httpServer = httpServer);
 };
-
-runBalServer();
