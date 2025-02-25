@@ -7,6 +7,7 @@ import {
     TextDocuments
 } from 'vscode-languageserver/browser';
 import { TextDocument } from 'vscode-languageserver-textdocument';
+import { v4 as uuidv4 } from 'uuid';
 
 const ws = new WebSocket(`ws://localhost:9091/bal`);
 
@@ -20,7 +21,7 @@ const connection = createConnection(browserReader, browserWriter);
 
 connection.onInitialize(async (_params: InitializeParams): Promise<InitializeResult> => {
     console.log(_params);
-    const request = getRpcRequest(1, "initialize", await resolveAbsolutePath(_params))
+    const request = getRpcRequest(uuidv4(), "initialize", await resolveAbsolutePath(_params))
     return sendRequestToWS(request) as Promise<InitializeResult>;
 });
 
@@ -47,8 +48,7 @@ connection.onDidChangeTextDocument(async (params) => {
 })
 
 connection.onRequest(async (method, params) => {
-    // TODO: find a proper id generating way
-    const requestId = Math.floor(Math.random() * 100000);
+    const requestId = uuidv4();
     const request = getRpcRequest(requestId, method, await resolveAbsolutePath(params));
     return sendRequestToWS(request);
 });
@@ -125,7 +125,7 @@ function getRpcNotification(method: string, params: object | any[] | undefined) 
     });
 }
 
-function getRpcRequest(id: number, method: string, params: object | any[] | undefined) {
+function getRpcRequest(id: string, method: string, params: object | any[] | undefined) {
     return {
         id: id,
         jsonrpc: "2.0",

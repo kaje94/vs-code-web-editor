@@ -5,9 +5,8 @@
   "scripts": {
     "compile-test": "npm run --prefix=test compile-web",
     "compile-simple-web-extension": "npm run --prefix=simple-web-extension compile-web",
-    "dev": "npm run compile-simple-web-extension && node .",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "npm run compile-simple-web-extension && node .",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",

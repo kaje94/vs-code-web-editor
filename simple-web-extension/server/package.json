@@ -12,6 +12,7 @@
 		"url": "https://github.com/Microsoft/vscode-extension-samples"
 	},
 	"dependencies": {
+		"uuid": "^11.1.0",
 		"vscode-jsonrpc": "^8.2.1",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
