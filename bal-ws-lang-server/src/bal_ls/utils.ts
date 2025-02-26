@@ -10,10 +10,11 @@ export const getLocalDirectory = (referenceUrl: string | URL) => {
 
 export const resolveAbsolutePath = (message: string) => {
   if (message.includes(`${SCHEME}:`)) { // messages from client
-    message = message.replace(new RegExp(`${SCHEME}:`, 'g'), `file://${BASE_DIR}`);
+    message = message.replace(new RegExp(`${SCHEME}:`, 'g'), `file:///${BASE_DIR}`);
   }
-  else if (message.includes(`${BASE_DIR}`)) { // messages from lang server
-    message = message.replace(new RegExp(`file://${BASE_DIR}`, 'g'), `${SCHEME}:`);
+  else if (message.includes(`${BASE_DIR}`) || message.includes("bala:/")) { // messages from lang server
+    message = message.replace(new RegExp("bala:/", 'g'), "bala://");
+    message = message.replace(new RegExp(`file:///${BASE_DIR}`, 'g'), `${SCHEME}:`);
     message = message.replace(new RegExp(`${BASE_DIR}`, 'g'), "");
   }
   return JSON.parse(message);

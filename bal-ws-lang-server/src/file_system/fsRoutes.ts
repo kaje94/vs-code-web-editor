@@ -7,7 +7,7 @@ import { SCHEME } from '../bal_ls/models';
 const fsRouter = express.Router();
 const git: SimpleGit = simpleGit();
 
-export const BASE_DIR: string = path.join(path.resolve(__dirname, '../..'), 'repos'); // Base directory for all repos
+export const BASE_DIR: string = path.join(path.resolve(__dirname, '../..'), 'repos').replace(/\\/g, "/"); // Base directory for all repos
 
 fsRouter.get("/clone/:userId/:repoName", async (req: Request, res: Response) => {
     const { userId, repoName } = req.params;
