@@ -2,19 +2,32 @@ import { WebSocketServer } from "ws";
 import { IncomingMessage, Server } from "node:http";
 import { URL } from "node:url";
 import { Socket } from "node:net";
-import { type IWebSocket, WebSocketMessageReader, WebSocketMessageWriter} from "vscode-ws-jsonrpc";
+import { type IWebSocket, WebSocketMessageReader, WebSocketMessageWriter } from "vscode-ws-jsonrpc";
 import { createConnection, createServerProcess, forward } from "vscode-ws-jsonrpc/lib/server";
 import { Message, InitializeRequest, type InitializeParams, RegistrationParams, RegistrationRequest } from "vscode-languageserver-protocol";
 import { LanguageName, LanguageServerRunConfig, SCHEME } from "./models";
-import { resolveAbsolutePath } from "./utils";
+import { resolvePath } from "./utils";
+import { URI } from "vscode-uri";
+import os from "os";
 
-export const runBalServer = (httpServer: Server) => {
+export const runBalServer = async (httpServer: Server) => {
+  let runCommand = "bal";
+  const runCommandArgs = [];
+  if (os.platform() === "win32") {
+    runCommand = "cmd.exe";
+    runCommandArgs.push(...["/c", "bal.bat"]);
+  }
+  runCommandArgs.push("start-language-server")
+
   runLanguageServer({
     serverName: "bal",
     pathName: "/bal",
     serverPort: 9090,
-    runCommand: "bal",
-    runCommandArgs: ["start-language-server"],
+    runCommand: runCommand,
+    runCommandArgs: runCommandArgs,
+    spawnOptions: {
+      shell: true,
+    },
     wsServerOptions: {
       noServer: true,
       perMessageDeflate: false,
@@ -42,59 +55,59 @@ export const runLanguageServer = (
   });
 };
 
-export const upgradeWsServer = (runconfig: LanguageServerRunConfig, config: { server: Server; wss: WebSocketServer;}) => {
+export const upgradeWsServer = (runconfig: LanguageServerRunConfig, config: { server: Server; wss: WebSocketServer; }) => {
   config.server.on("upgrade", (request: IncomingMessage, socket: Socket, head: Buffer) => {
-      const baseURL = `http://${request.headers.host}/`;
-      const pathName =
-        request.url !== undefined
-          ? new URL(request.url, baseURL).pathname
-          : undefined;
+    const baseURL = `http://${request.headers.host}/`;
+    const pathName =
+      request.url !== undefined
+        ? new URL(request.url, baseURL).pathname
+        : undefined;
 
-      if (pathName === runconfig.pathName) {
-        config.wss.handleUpgrade(request, socket, head, (webSocket) => {
-          const socket: IWebSocket = {
-            send: (content) =>
-              webSocket.send(content, (error) => {
-                if (error) {
-                  throw error;
-                }
-              }),
-            onMessage: (cb) =>
-              webSocket.on("message", (data) => {
-                cb(data);
-              }),
-            onError: (cb) => webSocket.on("error", cb),
-            onClose: (cb) => webSocket.on("close", cb),
-            dispose: () => webSocket.close(),
-          };
-          // launch the server when the web socket is opened
-          if (webSocket.readyState === webSocket.OPEN) {
+    if (pathName === runconfig.pathName) {
+      config.wss.handleUpgrade(request, socket, head, (webSocket) => {
+        const socket: IWebSocket = {
+          send: (content) =>
+            webSocket.send(content, (error) => {
+              if (error) {
+                throw error;
+              }
+            }),
+          onMessage: (cb) =>
+            webSocket.on("message", (data) => {
+              cb(data);
+            }),
+          onError: (cb) => webSocket.on("error", cb),
+          onClose: (cb) => webSocket.on("close", cb),
+          dispose: () => webSocket.close(),
+        };
+        // launch the server when the web socket is opened
+        if (webSocket.readyState === webSocket.OPEN) {
+          launchLanguageServer(runconfig, socket);
+        } else {
+          webSocket.on("open", () => {
             launchLanguageServer(runconfig, socket);
-          } else {
-            webSocket.on("open", () => {
-              launchLanguageServer(runconfig, socket);
-            });
-          }
-        });
-      }
+          });
+        }
+      });
     }
+  }
   );
 };
 
-export const launchLanguageServer = ( runconfig: LanguageServerRunConfig, socket: IWebSocket ) => {
-  
+export const launchLanguageServer = (runconfig: LanguageServerRunConfig, socket: IWebSocket) => {
+
   const reader = new WebSocketMessageReader(socket);
   const writer = new WebSocketMessageWriter(socket);
   const socketConnection = createConnection(reader, writer, () =>
     socket.dispose()
   );
-  
+
   const { serverName, runCommand, runCommandArgs, spawnOptions } = runconfig;
   const serverConnection = createServerProcess(serverName, runCommand, runCommandArgs, spawnOptions);
-  
+
   if (serverConnection !== undefined) {
     forward(socketConnection, serverConnection, (message) => {
-      message = resolveAbsolutePath(JSON.stringify(message));
+      message = resolvePath(JSON.stringify(message));
 
       if (Message.isRequest(message)) {
         if (message.method === InitializeRequest.type.method) {
@@ -103,9 +116,16 @@ export const launchLanguageServer = ( runconfig: LanguageServerRunConfig, socket
         } else if (message.method === RegistrationRequest.method) {
           const registrationParams = message.params as RegistrationParams;
           if (registrationParams.registrations.length > 0) {
-              registrationParams.registrations[0].registerOptions
-              .documentSelector.push({language: LanguageName.ballerina, scheme: `${SCHEME}`})
+            registrationParams.registrations[0].registerOptions
+              .documentSelector.push({ language: LanguageName.ballerina, scheme: `${SCHEME}` })
           }
+        } else if (message.method === "typesManager/getTypes" && message.params) {
+          // const jsonmessage = JSON.parse(message.params?.toString())
+          const inputPath = (message.params as { filePath: string })?.filePath as string;
+          const fixedPath = URI.parse(inputPath).path.substring(1);
+          console.log("parse: ", URI.parse(inputPath))
+          console.log(fixedPath)
+          message.params = { filePath: fixedPath };
         }
         if (runconfig.logMessages ?? false) {
           console.log(`${serverName} Server received: ${message.method}`);
