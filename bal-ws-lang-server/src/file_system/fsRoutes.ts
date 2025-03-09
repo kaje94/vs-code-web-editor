@@ -161,4 +161,38 @@ fsRouter.post("/copy", (req: Request, res: Response) => {
     }
 })
 
+fsRouter.get("/readbal", (req: Request, res: Response) => {
+    const inputScheme = req.query.scheme as string;
+    const inputUrl = req.query.url as string;
+    let userRepoPath = inputUrl;
+    if (SCHEME == inputScheme && fs.statSync(path.join(BASE_DIR, inputUrl)).isDirectory()) {
+        userRepoPath = path.join(BASE_DIR, inputUrl);
+        res.status(200).json(getAllBalFiles(userRepoPath, userRepoPath, inputUrl));
+    } else {
+        res.status(200).json([]);
+    }
+})
+
+function getAllBalFiles(parentPath: string, basePath: string, inputPath: string) { // c:/documents/folder
+    let result: {relativePath: string, path: string}[] = [];
+    const files = fs.readdirSync(parentPath);
+    for (const file of files) {
+        let fullPath = path.join(parentPath, file); // c:/documents/folder/subf1
+        if (fs.statSync(fullPath).isDirectory() && !fullPath.endsWith(".git")) {
+            result = result.concat(getAllBalFiles(fullPath, basePath, inputPath));
+        } else if (file.endsWith('.bal') && !file.endsWith('test.bal')) {
+            let relativePath = fullPath.replace(path.join(basePath, "modules"), "");
+            relativePath = relativePath.replace(basePath, "");
+            relativePath = relativePath.replace(/\\/g, "/");
+            fullPath = fullPath.replace(/\\/g, "/");
+            console.log(fullPath)
+            console.log("base: ", basePath);
+            fullPath = fullPath.replace(BASE_DIR, "");
+            console.log(fullPath)
+            result.push({relativePath: relativePath.substring(1), path: `${SCHEME}:${fullPath}`});
+        }
+    }
+    return result;
+}
+
 export default fsRouter;

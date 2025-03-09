@@ -6,15 +6,25 @@ import { type IWebSocket, WebSocketMessageReader, WebSocketMessageWriter } from 
 import { createConnection, createServerProcess, forward } from "vscode-ws-jsonrpc/lib/server";
 import { Message, InitializeRequest, type InitializeParams, RegistrationParams, RegistrationRequest } from "vscode-languageserver-protocol";
 import { LanguageName, LanguageServerRunConfig, SCHEME } from "./models";
-import { resolveAbsolutePath } from "./utils";
+import { resolvePath } from "./utils";
+import { URI } from "vscode-uri";
+import os from "os";
 
-export const runBalServer = (httpServer: Server) => {
+export const runBalServer = async (httpServer: Server) => {
+  let runCommand = "bal";
+  const runCommandArgs = [];
+  if (os.platform() === "win32") {
+    runCommand = "cmd.exe";
+    runCommandArgs.push(...["/c", "bal.bat"]);
+  }
+  runCommandArgs.push("start-language-server")
+
   runLanguageServer({
     serverName: "bal",
     pathName: "/bal",
     serverPort: 9090,
-    runCommand: "cmd.exe",
-    runCommandArgs: ["/c", "bal.bat", "start-language-server"],
+    runCommand: runCommand,
+    runCommandArgs: runCommandArgs,
     spawnOptions: {
       shell: true,
     },
@@ -97,7 +107,7 @@ export const launchLanguageServer = (runconfig: LanguageServerRunConfig, socket:
 
   if (serverConnection !== undefined) {
     forward(socketConnection, serverConnection, (message) => {
-      message = resolveAbsolutePath(JSON.stringify(message));
+      message = resolvePath(JSON.stringify(message));
 
       if (Message.isRequest(message)) {
         if (message.method === InitializeRequest.type.method) {
@@ -109,6 +119,13 @@ export const launchLanguageServer = (runconfig: LanguageServerRunConfig, socket:
             registrationParams.registrations[0].registerOptions
               .documentSelector.push({ language: LanguageName.ballerina, scheme: `${SCHEME}` })
           }
+        } else if (message.method === "typesManager/getTypes" && message.params) {
+          // const jsonmessage = JSON.parse(message.params?.toString())
+          const inputPath = (message.params as { filePath: string })?.filePath as string;
+          const fixedPath = URI.parse(inputPath).path.substring(1);
+          console.log("parse: ", URI.parse(inputPath))
+          console.log(fixedPath)
+          message.params = { filePath: fixedPath };
         }
         if (runconfig.logMessages ?? false) {
           console.log(`${serverName} Server received: ${message.method}`);
